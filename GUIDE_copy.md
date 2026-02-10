@@ -4,6 +4,8 @@ When you hear the acronym _RTC_, some form of video conferencing probably comes 
 
 Now, to be frank, the current iteration of this RTC datastream functionality is not meant or recommended for production level signaling. We primarily use the data channel for broadcast delivery of transcribed speech and Conversational AI Agent transcripts, where ordered and guaranteed message delivery is not crticial. When true scalable signaling functionality is needed, Agora's Signaling SDK should be used directly, which mirrors and pairs with the RTC flow for audio and video. But I wanted to challenge myself to keep this project as rudimentary as possible, hence we'll just be using the Agora WebSDK, HTML, CSS, and some Lambda functions to mimic a backend, nothing more. This is in no way a recommended approach or design, but it's certainly fun to see how the simplest building blocks can put together a functioning AI-controlled multiplayer game!
 
+![AgoraBattleship In-Game](./media/1.png)
+
 This guide walks through building a two-player Battleship game that uses Agora for three things simultaneously:
 1. Video/audio communication between players
 2. Game state synchronization via datastream messages through the existing RTC connection
