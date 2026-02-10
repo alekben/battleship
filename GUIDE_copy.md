@@ -63,11 +63,11 @@ In a turn-based game, you need every player to agree on:
 - What the board looks like
 - When the game ends
 
-The naive approach: poll a server every second. The better approach: server pushes updates via WebSocket. The Agora approach: use the same RTC connection that's already open for video.
+The naive approach: poll a server every second. The better approach: server pushes updates via WebSocket. The fun Agora approach we'll be using here: _use the same RTC connection that's already open for video_.
 
 ### Why Agora's Data Messaging Works Here
 
-Agora's `sendStreamMessage()` API lets you send up to 30KB of data per message at 30 messages per second. For a Battleship move (row, column, result), you need maybe 50 bytes. This is massive overkill, which is perfect—you have headroom.
+Agora's WebSDK client's `sendStreamMessage()` API lets you broadcast data messages into the existing RTC channel. For a Battleship move (row, column, result), you need maybe 50 bytes, which is perfect—we're not expecting high frequency or large data structures. This API does not replace a server or service that tracks multiplayer game state, but it does allow us to emulate having a backend to relay states with minimal effort.
 
 Here's what the message structure looks like:
 
@@ -317,7 +317,7 @@ Why wait? Because you don't want agents listening during ship placement. They mi
 
 ### Agent Lambda Functions
 
-The agents aren't running in the browser. They're serverless functions:
+The agents aren't triggered directly from the browser. We're just going to call serverless functions which have the API keys needed to start a complete ConvoAI Agent. The serverless functions themselves are just [Agora's ConvoAI RESTful API calls](https://docs.agora.io/en/conversational-ai/rest-api/agent/join):
 
 ```javascript
 async function startAgent(name, chan, uid, remoteUid, prompt, message) {
@@ -351,14 +351,14 @@ async function startAgent(name, chan, uid, remoteUid, prompt, message) {
 The Lambda function spins up an agent that:
 1. Joins the specified Agora channel
 2. Subscribes to the player's audio
-3. Runs speech-to-text on incoming audio
-4. Processes commands via GPT-4
-5. Generates text-to-speech responses
-6. Publishes audio back to the channel
+3. Runs speech-to-text on incoming audio (using Agora's ARES service, but any supported ASR can be used)
+4. Processes commands via GPT-4o-mini (any supported model can be used)
+5. Generates text-to-speech responses (using Azure here)
+6. Publishes TTS audio and user/assistant.transcript datastream messages back to the channel
 
 ### Agent Message Protocol
 
-Agents send transcripts back via Agora's RTM (Real-Time Messaging) or stream messages. The messages arrive chunked to handle size limits:
+Agora ConvoAI Voice Agents can send transcripts back via Agora's RTM (Real-Time Messaging) or RTC datastream messages. Here we opt for the datastream variety, so that we can achieve our goal of just using the WebSDK, nothing more. The messages arrive chunked to handle size limits:
 
 ```javascript
 function handleAgentStreamMessage(uid, msgData) {
@@ -446,7 +446,7 @@ function attackCell(row, col) {
 }
 ```
 
-This creates natural turn-taking. Your agent speaks when it's your turn, stays quiet otherwise.
+This creates natural turn-taking, but more importantly keeps one user's Agent from hearing voice input from the other user. This way both Players can still talk to each other during the game, without trigger the off-turn Player's agent unexpectedly. Your agent listens and speaks when it's your turn, and stays quiet otherwise.
 
 ## Audience Mode: Spectator View
 
