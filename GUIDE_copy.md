@@ -24,7 +24,34 @@ A browser-based Battleship game where:
 - Spectators can join and watch live gameplay
 
 
-![Game Architecture Diagram - placeholder for image showing player connections, channels, and data flow]
+```mermaid
+flowchart TB
+    subgraph Main["Main Agora Channel (Audio + Video)"]
+        direction LR
+        PlayerA[Player A]
+        PlayerB[Player B]
+        PlayerA <-->|"Audio, Video, Game events & status"| PlayerB
+    end
+
+    subgraph Lambda["AWS Lambda"]
+        Init["Initiates AI Agents"]
+    end
+
+    subgraph ChannelA["Player A + AI Agent Channel (Audio only)"]
+        PA[Player A]
+        AgentA[AI Agent A]
+        PA <-->|"Voice commands & responses"| AgentA
+    end
+
+    subgraph ChannelB["Player B + AI Agent Channel (Audio only)"]
+        PB[Player B]
+        AgentB[AI Agent B]
+        PB <-->|"Voice commands & responses"| AgentB
+    end
+
+    Init --> AgentA
+    Init --> AgentB
+```
 
 ## The Core Problem: Syncing Turn-Based Game State
 
