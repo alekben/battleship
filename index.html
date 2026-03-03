@@ -48,7 +48,7 @@
     <div id="gameInstructions" class="hidden mb-6 bg-gray-800 p-4 rounded-lg text-gray-200 space-y-2 max-w-2xl mx-auto">
       <h3 class="font-bold text-lg mb-2">Game Instructions:</h3>
       <ol class="list-decimal list-inside space-y-2">
-        <li>Place your ships after starting or joining a game</li>
+        <li>Place your ships after both players join the game</li>
         <li>After the game starts, say "Attack <COORDINATES>" to perform a move (ex. "Attack B4"), or click a cell to attack</li>
         <li>Say "Choose for me" for a random attack</li>
         <li>Make sure that your speaker/audio out is unmuted so that you can hear the agent!</li>
@@ -335,8 +335,8 @@
           await new Promise(resolve => requestAnimationFrame(resolve));
 
           // Now that boards exist and are visible, set their labels
-          const myBoardLabel = document.querySelector("#myBoard").parentElement.parentElement.querySelector("h2");
-          const enemyBoardLabel = document.querySelector("#enemyBoard").parentElement.parentElement.querySelector("h2");
+          const myBoardLabel = document.querySelector("#boardA");
+          const enemyBoardLabel = document.querySelector("#boardB");
 
           if (myBoardLabel && enemyBoardLabel) {
             myBoardLabel.textContent = "PlayerA's Board";
@@ -363,7 +363,7 @@
           await agentClient.publish(localAgentAudioTrack);
           localAgentAudioTrack.setVolume(100);
 
-          updateStatus(`Place your ships! (${shipsToPlace} remaining)`);
+          updateStatus(`Waiting for Player B to join...`);
         } catch (err) {
           console.error(err);
           updateStatus("Failed to start: " + err.message);
@@ -507,8 +507,8 @@
           await new Promise(resolve => requestAnimationFrame(resolve));
 
           // Now that boards exist and are visible, set their labels
-          const myBoardLabel = document.querySelector("#myBoard").parentElement.parentElement.querySelector("h2");
-          const enemyBoardLabel = document.querySelector("#enemyBoard").parentElement.parentElement.querySelector("h2");
+          const myBoardLabel = document.querySelector("#boardA");
+          const enemyBoardLabel = document.querySelector("#boardB");
 
           if (myBoardLabel && enemyBoardLabel) {
             myBoardLabel.textContent = "PlayerA's Board";
@@ -1823,8 +1823,10 @@
         
         // Restore button text and board labels for potential player mode
         endBtn.textContent = "End";
-        document.querySelector("#myBoard").parentElement.parentElement.querySelector("h2").textContent = "Your Board";
-        document.querySelector("#enemyBoard").parentElement.parentElement.querySelector("h2").textContent = "Enemy Board";
+        const boardALabel = document.querySelector("#boardA");
+        const boardBLabel = document.querySelector("#boardB");
+        if (boardALabel) boardALabel.textContent = "Your Board";
+        if (boardBLabel) boardBLabel.textContent = "Enemy Board";
         
         // Show video containers for potential player mode
         document.querySelector("#localVideo").parentElement.classList.remove('hidden');
