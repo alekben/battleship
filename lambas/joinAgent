@@ -1,0 +1,156 @@
+import json
+import urllib.request
+import urllib.error
+import os
+
+# Environment Variables needed:
+# AGORA_REST_AUTH
+# APP_ID
+# LLM_KEY
+# MODEL
+# TTS_KEY
+# TTS_REGION
+# TTS_VOICE
+# URL
+
+def lambda_handler(event, context):
+    print(event)
+    # get agent join params from request body
+    parsed_data = json.loads(event['body'])
+    agentname = parsed_data.get("agentname")
+    channel = parsed_data.get("channel")
+    agentuid = parsed_data.get("agentuid")
+    rtmflag = parsed_data.get("rtmflag")
+    agentrtmuid = parsed_data.get("agentrtmuid")
+    remoteuid = parsed_data.get("remoteuid")
+    prompt = parsed_data.get("prompt")
+    message = parsed_data.get("message")
+
+
+    # os environ variables
+    appid = os.environ.get("APP_ID")
+
+    if not agentname or not channel or not agentuid or not remoteuid or not prompt:
+        return {
+        'statusCode': 503,
+        'body': "check the agent join body params"
+    }
+
+    if not rtmflag:
+        rtmflag = False
+
+    if not agentrtmuid:
+        agentrtmuid = agentuid
+
+    url = f"https://api.agora.io/api/conversational-ai-agent/v2/projects/{appid}/join"
+    headers = {
+        'Content-Type': 'application/json',
+        'Authorization': os.environ.get("AGORA_REST_AUTH")
+    }
+    
+    data = {
+	"name":agentname,
+	"properties":{
+		"channel":channel,
+		"token":"",
+		"agent_rtc_uid":agentuid,
+		"enable_string_uid": True,
+        "agent_rtm_uid": agentrtmuid,
+        "advanced_features": {
+            "enable_rtm": rtmflag,
+            "enable_aivad": False
+        },
+		"idle_timeout":120,
+		"remote_rtc_uids":[remoteuid],
+	    "asr":{
+		    "language":"en-US"
+	    },
+        "turn_detection": {
+            "mode": "default",
+            "config": {
+                "start_of_speech": {
+                    "mode": "disabled",
+                    "disabled_config": {
+                        "strategy": "ignore"
+                        }
+                    },
+                "end_of_speech": {
+                    "mode": "vad"
+                }
+            }     
+        },
+	    "llm":{
+            "greeting_interruptable": False,
+		    "url":os.environ.get("URL"),
+		    "api_key":os.environ.get("LLM_KEY"),
+		    "system_messages":[{
+			    "role":"system",
+			    "content":prompt
+		    }],
+		"greeting_message":message,
+		"failure_message":"Sorry, something went wrong, the game is cancelled.",
+		"max_history":1,
+		"params":{
+			"model":os.environ.get("MODEL"),
+			"max_completion_tokens":1000
+		}},
+		"tts":{
+            "skip_patterns": [4],
+			"vendor":os.environ.get("TTS_VENDOR"),
+			"params":{
+				"key":os.environ.get("TTS_KEY"),
+				"region":os.environ.get("TTS_REGION"),
+				"voice_name":os.environ.get("TTS_VOICE"),
+                "rate": 1.15,
+				"volume":70
+			}
+		},
+        "parameters":{
+            "audio_scenario": "chorus",
+			"transcript":{
+                "redundant": False,
+                "enable_words": False
+            }
+		}
+	}
+}
+    
+    try:
+        # Convert data dict to JSON string and encode to bytes
+        data = json.dumps(data).encode('utf-8')
+        
+        # Create a Request object with the URL, data, and headers
+        req = urllib.request.Request(
+            url=url,
+            data=data,  # Add the POST data
+            headers=headers,
+            method='POST'  # Specify the POST method
+        )
+        
+        # Make the request and get the response
+        with urllib.request.urlopen(req) as response:
+            # Read and decode the response
+            data = response.read().decode('utf-8')
+            # Parse JSON response
+            json_data = json.loads(data)
+
+            return {
+                'statusCode': 200,
+                'body': json.dumps(json_data)
+            }
+
+    except urllib.error.HTTPError as e:
+        return {
+            'statusCode': e.code,
+            'body': json.dumps({'error': str(e)})
+        }
+    except urllib.error.URLError as e:
+        return {
+            'statusCode': 500,
+            'body': json.dumps({'error': str(e)})
+        }
+    except Exception as e:
+        return {
+            'statusCode': 500,
+            'body': json.dumps({'error': str(e)})
+        }

@@ -1,0 +1,61 @@
+import json
+import urllib.request
+import urllib.error
+import os
+
+# Agora_REST_AUTH
+# APP_ID
+
+def lambda_handler(event, context):
+    # get agent join params from request body
+    parsed_data = json.loads(event['body'])
+    agentname = parsed_data.get("agentname")
+
+    if not agentname :
+        return {
+        'statusCode': 503,
+        'body': "check the agent leave body params"
+    }
+
+    appid = os.environ.get("APP_ID")
+    url = f"https://api.agora.io/api/conversational-ai-agent/v2/projects/{appid}/agents/{agentname}/leave"
+    headers = {
+        'Content-Type': 'application/json',
+        'Authorization': os.environ.get("AGORA_REST_AUTH")
+    }
+       
+    try:        
+        # Create a Request object with the URL, data, and headers
+        req = urllib.request.Request(
+            url=url,
+            headers=headers,
+            method='POST'  # Specify the POST method
+        )
+        
+        # Make the request and get the response
+        with urllib.request.urlopen(req) as response:
+            # Read and decode the response
+            data = response.read().decode('utf-8')
+            # Parse JSON response
+            json_data = json.loads(data)
+
+            return {
+                'statusCode': 200,
+                'body': json.dumps(json_data)
+            }
+
+    except urllib.error.HTTPError as e:
+        return {
+            'statusCode': e.code,
+            'body': json.dumps({'error': str(e)})
+        }
+    except urllib.error.URLError as e:
+        return {
+            'statusCode': 500,
+            'body': json.dumps({'error': str(e)})
+        }
+    except Exception as e:
+        return {
+            'statusCode': 500,
+            'body': json.dumps({'error': str(e)})
+        }

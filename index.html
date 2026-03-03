@@ -547,8 +547,8 @@
           const enemyBoardLabel = document.querySelector("#boardB");
 
           if (myBoardLabel && enemyBoardLabel) {
-            myBoardLabel.textContent = "PlayerA's Board";
-            enemyBoardLabel.textContent = "PlayerB's Board";
+            myBoardLabel.textContent = "PlayerB's Board";
+            enemyBoardLabel.textContent = "PlayerA's Board";
           } else {
             console.error("Board labels not found in DOM");
           }
@@ -834,7 +834,7 @@
         collapseGameInstructions();
         //join respective agent
         if (isPlayerA) {
-            startAgent("AgentA", currentAgentChannelName, "AgentA", "PlayerA", "You are acting as a commentator for a game of Battleship. You are only to respond when you hear the word *Attack* followed by a letter and number, which are coordinates on the board. For example, I will say *Attack B4* and you should then respond with *Acknowledged, firing on B4*. The coordinates range from A through J and 1 through 10. You can also respond to *Choose for me* by responding with *Acknowledged, attacking [letter A through J and a number 1 through 10]*. Do not respond to anything else unless the question is naval related or about the rules of battleship.", "Welcome to Battleship Agora! Player A, it's your turn.");
+            startAgent("AgentA", currentAgentChannelName, "AgentA", "PlayerA", "You are acting as a commentator for a game of Battleship. You are only to respond when you hear the word *Attack* followed by a letter and number, which are coordinates on the board. For example, I will say *Attack B4* and you should then respond with *Acknowledged, firing on B4*. The coordinates range from A through J and 1 through 10. You can also respond to *Choose for me* by responding with *Acknowledged, attacking [letter A through J and a number 1 through 10]*. Do not respond to anything else unless the question is naval related or about the rules of battleship.", "Welcome to Battleship Agora! It's your turn, Player A.");
           } else {
             startAgent("AgentB", currentAgentChannelName, "AgentB", "PlayerB", "You are acting as a commentator for a game of Battleship. You are only to respond when you hear the word *Attack* followed by a letter and number, which are coordinates on the board. For example, I will say *Attack B4* and you should then respond with *Acknowledged, firing on B4*. The coordinates range from A through J and 1 through 10. You can also respond to *Choose for me* by responding with *Acknowledged, attacking [letter A through J and a number 1 through 10]*. Do not respond to anything else unless the question is naval related or about the rules of battleship.", "");
           }
@@ -872,9 +872,15 @@
 
           //join respective agent
           if (isPlayerA) {
-            startAgent("AgentA", currentAgentChannelName, "AgentA", "PlayerA", "You are acting as a commentator for a game of Battleship. You are only to respond when you hear the word *Attack* followed by a letter and number, which are coordinates on the board. For example, I will say *Attack B4* and you should then respond with *Acknowledged, firing on B4*. The coordinates range from A through J and 1 through 10. You can also respond to *Choose for me* by responding with *Acknowledged, attacking [letter A through J and a number 1 through 10]*. Do not respond to anything else unless the question is naval related or about the rules of battleship.", "Welcome to Battleship Agora! Player A, it's your turn.");
+            // Intentional delay to avoid both browsers triggering agent start simultaneously.
+            setTimeout(() => {
+              startAgent("AgentA", currentAgentChannelName, "AgentA", "PlayerA", "You are acting as a commentator for a game of Battleship. You are only to respond when you hear the word *Attack* followed by a letter and number, which are coordinates on the board. For example, I will say *Attack B4* and you should then respond with *Acknowledged, firing on B4*. The coordinates range from A through J and 1 through 10. You can also respond to *Choose for me* by responding with *Acknowledged, attacking [letter A through J and a number 1 through 10]*. Do not respond to anything else unless the question is naval related or about the rules of battleship.", "Welcome to Battleship Agora! It's your turn, Player A.");
+            }, 2000);
           } else {
-            startAgent("AgentB", currentAgentChannelName, "AgentB", "PlayerB", "You are acting as a commentator for a game of Battleship. You are only to respond when you hear the word *Attack* followed by a letter and number, which are coordinates on the board. For example, I will say *Attack B4* and you should then respond with *Acknowledged, firing on B4*. The coordinates range from A through J and 1 through 10. You can also respond to *Choose for me* by responding with *Acknowledged, attacking [letter A through J and a number 1 through 10]*. Do not respond to anything else unless the question is naval related or about the rules of battleship.", "");
+            // Intentional delay to avoid both browsers triggering agent start simultaneously.
+            setTimeout(() => {
+              startAgent("AgentB", currentAgentChannelName, "AgentB", "PlayerB", "You are acting as a commentator for a game of Battleship. You are only to respond when you hear the word *Attack* followed by a letter and number, which are coordinates on the board. For example, I will say *Attack B4* and you should then respond with *Acknowledged, firing on B4*. The coordinates range from A through J and 1 through 10. You can also respond to *Choose for me* by responding with *Acknowledged, attacking [letter A through J and a number 1 through 10]*. Do not respond to anything else unless the question is naval related or about the rules of battleship.", "");
+            }, 2000);
           }
 
           // Set initial turn - Player A goes first
