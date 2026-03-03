@@ -719,7 +719,8 @@
             // Enemy board cell
             const enemyCell = document.createElement("div");
             enemyCell.className = "h-7 w-7 bg-gray-700 border border-gray-600 cursor-pointer";
-            enemyCell.onclick = () => agentThink(currentAgentChannelName, "Attack ", r, c);
+            enemyCell.onclick = () => agentSpeak(myAgentsId, `Acknowledged, firing on ${String.fromCharCode('A'.charCodeAt(0) + r)}${c + 1}.`, "INTERRUPT", false);
+            //agentThink(currentAgentChannelName, "Attack ", r, c);
             //enemyCell.onclick = () => attackCell(r, c);
             enemyBoardEl.appendChild(enemyCell);
           }
@@ -1417,7 +1418,7 @@
           channel: chan,
           agentuid: uid,
           agentrtmuid: chan,
-          rtmflag: true,
+          rtmflag: false,
           remoteuid: remoteUid,
           prompt: prompt,
           message: message
@@ -1500,41 +1501,42 @@
         }
       }
 
-      async function agentThink(uid, message, r, c) {
+      // agentThink deployed on Lambda for send P2P RTM message to Agent, not needed here
+      //async function agentThink(uid, message, r, c) {
 
         //convert r to a letter, where 0->A, 1->B, etc
-        const letter = String.fromCharCode('A'.charCodeAt(0) + r);
-        const col = c + 1;
-        const finalMessage = message + letter + col;
+        //const letter = String.fromCharCode('A'.charCodeAt(0) + r);
+        //const col = c + 1;
+        //const finalMessage = message + letter + col;
 
         // agentThink deployed on Lambda
-        const url = "https://catzwboegapngwhmrrkjs7m5x40vwoej.lambda-url.us-east-2.on.aws/";
+        //const url = "https://catzwboegapngwhmrrkjs7m5x40vwoej.lambda-url.us-east-2.on.aws/";
         
-        const headers = {
-          "X-Requested-With": "XMLHttpRequest",
-          "Accept": "application/json",
-          "Content-Type": "application/json"
-        };
+        //const headers = {
+        //  "X-Requested-With": "XMLHttpRequest",
+        //  "Accept": "application/json",
+        //  "Content-Type": "application/json"
+        //};
 
         // Build request
-        const reqBody = {
-        agentuid: uid,
-        text: finalMessage,
-        };
+        //const reqBody = {
+        //agentuid: uid,
+        //text: finalMessage,
+        //};
 
-        try {
-        const resp = await fetch(url, {
-          method: "POST",
-          headers,
-          body: JSON.stringify(reqBody)
-        });
-        if (resp.status === 200) {
-          console.log(`Agent ${uid} sent message ${message}`);
-        }
-        } catch (err) {
-          console.error("Error: " + err);
-        }
-      }
+        //try {
+        //const resp = await fetch(url, {
+        //  method: "POST",
+        //  headers,
+        //  body: JSON.stringify(reqBody)
+        //});
+        //if (resp.status === 200) {
+        //  console.log(`Agent ${uid} sent message ${message}`);
+        //}
+        //} catch (err) {
+        //  console.error("Error: " + err);
+        //}
+      //}
 
      
 
