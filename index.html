@@ -44,16 +44,21 @@
       </button>
     </div>
 
-    <!-- Game Instructions (Only visible for players) -->
-    <div id="gameInstructions" class="hidden mb-6 bg-gray-800 p-4 rounded-lg text-gray-200 space-y-2 max-w-2xl mx-auto">
-      <h3 class="font-bold text-lg mb-2">Game Instructions:</h3>
-      <ol class="list-decimal list-inside space-y-2">
-        <li>Place your ships after both players join the game</li>
-        <li>After the game starts, say "Attack <COORDINATES>" to perform a move (ex. "Attack B4"), or click a cell to attack</li>
-        <li>Say "Choose for me" for a random attack</li>
-        <li>Make sure that your speaker/audio out is unmuted so that you can hear the agent!</li>
-        <li>Press 'U' to show the agent messages.</li>
-      </ol>
+    <!-- Game Instructions (Only visible for players; collapsible, auto-collapsed when both players ready) -->
+    <div id="gameInstructions" class="hidden mb-6 bg-gray-800 rounded-lg text-gray-200 max-w-2xl mx-auto">
+      <button type="button" id="gameInstructionsToggle" class="w-full text-left font-bold text-lg p-4 rounded-lg hover:bg-gray-700 transition-colors flex items-center justify-between gap-2" aria-expanded="true" aria-controls="gameInstructionsBody">
+        <span>Game Instructions</span>
+        <span id="gameInstructionsChevron" class="text-gray-400" aria-hidden="true">▼</span>
+      </button>
+      <div id="gameInstructionsBody" class="px-4 pb-4 space-y-2">
+        <ol class="list-decimal list-inside space-y-2">
+          <li>Place your ships after both players join the game</li>
+          <li>After the game starts, say "Attack <COORDINATES>" to perform a move (ex. "Attack B4"), or click a cell to attack</li>
+          <li>Say "Choose for me" for a random attack</li>
+          <li>Make sure that your speaker/audio out is unmuted so that you can hear the agent!</li>
+          <li>Press 'U' to show the agent messages.</li>
+        </ol>
+      </div>
     </div>
 
     <!-- Add this after the Buttons Row div and before the Channel List div -->
@@ -214,6 +219,7 @@
       // Agora variables
       let client = null;
       let agentClient = null;
+      let otherAgentClient = null;   // PlayerA: joins _agentb to hear AgentB; PlayerB: joins _agenta to hear AgentA
       let audienceSpecialClient = null;
       let currentChannelName = null;
       let currentAgentChannelName = null;
@@ -241,6 +247,7 @@
       let remoteVideoTrack = null;
 
       let agentAudioTrack = null;
+      let otherAgentAudioTrack = null;  // Remote audio from the other player's agent (AgentB for PlayerA, AgentA for PlayerB)
       let localAgentAudioTrack = null;
       let myAgentsId = null;
 
@@ -264,6 +271,29 @@
       const statusText       = document.getElementById("statusText");
       const myBoardEl        = document.getElementById("myBoard");
       const enemyBoardEl     = document.getElementById("enemyBoard");
+
+      // Game instructions collapsible: setup toggle (expand/collapse on click)
+      (function setupGameInstructionsToggle() {
+        const toggleBtn = document.getElementById("gameInstructionsToggle");
+        const body = document.getElementById("gameInstructionsBody");
+        const chevron = document.getElementById("gameInstructionsChevron");
+        if (!toggleBtn || !body) return;
+        toggleBtn.addEventListener("click", function () {
+          const isCollapsed = body.classList.toggle("hidden");
+          toggleBtn.setAttribute("aria-expanded", !isCollapsed);
+          if (chevron) chevron.textContent = isCollapsed ? "\u25B6" : "\u25BC";
+        });
+      })();
+
+      function collapseGameInstructions() {
+        const body = document.getElementById("gameInstructionsBody");
+        const toggleBtn = document.getElementById("gameInstructionsToggle");
+        const chevron = document.getElementById("gameInstructionsChevron");
+        if (!body || !toggleBtn) return;
+        body.classList.add("hidden");
+        toggleBtn.setAttribute("aria-expanded", "false");
+        if (chevron) chevron.textContent = "\u25B6";
+      }
 
       //agent transcript business
       let messageBuffer = [];
@@ -362,6 +392,12 @@
           await agentClient.join(AGORA_APP_ID, currentAgentChannelName, null, "PlayerA");
           await agentClient.publish(localAgentAudioTrack);
           localAgentAudioTrack.setVolume(100);
+
+          // Third client: join _agentb as audience to hear AgentB (do not subscribe to PlayerB's audio)
+          const agentBChannelName = currentChannelName + "_agentb";
+          otherAgentClient = AgoraRTC.createClient({ mode: "live", codec: "vp8", role: "audience" });
+          setupOtherAgentClientMediaHandlers("AgentB");
+          await otherAgentClient.join(AGORA_APP_ID, agentBChannelName, null, "PlayerA_other");
 
           updateStatus(`Waiting for Player B to join...`);
         } catch (err) {
@@ -536,6 +572,12 @@
           await agentClient.publish(localAgentAudioTrack);
           localAgentAudioTrack.setVolume(0);
 
+          // Third client: join _agenta as audience to hear AgentA (do not subscribe to PlayerA's audio)
+          const agentAChannelName = currentChannelName + "_agenta";
+          otherAgentClient = AgoraRTC.createClient({ mode: "live", codec: "vp8", role: "audience" });
+          setupOtherAgentClientMediaHandlers("AgentA");
+          await otherAgentClient.join(AGORA_APP_ID, agentAChannelName, null, "PlayerB_other");
+
           updateStatus(`Place your ships! (${shipsToPlace} remaining)`);
         } catch (err) {
           console.error(err);
@@ -592,6 +634,14 @@
             console.warn("Error leaving agent channel:", err);
           }
         }
+
+        if (otherAgentClient) {
+          try {
+            await otherAgentClient.leave();
+          } catch (err) {
+            console.warn("Error leaving other agent channel:", err);
+          }
+        }
         
         // Re-enable List Channels button
         listChannelsBtn.disabled = false;
@@ -624,6 +674,10 @@
           agentAudioTrack.stop();
           agentAudioTrack = null;
         }
+        if (otherAgentAudioTrack) {
+          otherAgentAudioTrack.stop();
+          otherAgentAudioTrack = null;
+        }
         if (localAgentAudioTrack) {
           localAgentAudioTrack.close();
           localAgentAudioTrack = null;
@@ -634,6 +688,7 @@
         
         client = null;
         agentClient = null;
+        otherAgentClient = null;
         currentChannelName = null;
         currentAgentChannelName = null;
         isPlayerA = false;
@@ -775,6 +830,7 @@
       //start game by bringing in agents
       function startGame() {
         bothPlayersReady = true;
+        collapseGameInstructions();
         //join respective agent
         if (isPlayerA) {
             startAgent("AgentA", currentAgentChannelName, "AgentA", "PlayerA", "You are acting as a commentator for a game of Battleship. You are only to respond when you hear the word *Attack* followed by a letter and number, which are coordinates on the board. For example, I will say *Attack B4* and you should then respond with *Acknowledged, firing on B4*. The coordinates range from A through J and 1 through 10. You can also respond to *Choose for me* by responding with *Acknowledged, attacking [letter A through J and a number 1 through 10]*. Do not respond to anything else unless the question is naval related or about the rules of battleship.", "Welcome to Battleship Agora! Player A, it's your turn.");
@@ -811,6 +867,7 @@
 
         if (!isPlacingShips) {
           bothPlayersReady = true;
+          collapseGameInstructions();
 
           //join respective agent
           if (isPlayerA) {
@@ -1288,6 +1345,23 @@
           const uid = user.uid;
           if (uid === "AgentB") {
             agentAudioTrack = null;
+          }
+        });
+      }
+
+      // Third client: audience in the other player's agent channel. Only subscribe to the agent (not the human).
+      function setupOtherAgentClientMediaHandlers(agentUid) {
+        if (!otherAgentClient) return;
+        otherAgentClient.on("user-published", async (user, mediaType) => {
+          if (user.uid === agentUid && mediaType === "audio") {
+            await otherAgentClient.subscribe(user, mediaType);
+            otherAgentAudioTrack = user.audioTrack;
+            otherAgentAudioTrack.play();
+          }
+        });
+        otherAgentClient.on("user-unpublished", (user, mediaType) => {
+          if (user.uid === agentUid) {
+            otherAgentAudioTrack = null;
           }
         });
       }
